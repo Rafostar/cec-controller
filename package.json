@@ -1,0 +1,24 @@
+{
+  "name": "cec-controller",
+  "version": "0.0.1",
+  "description": "Easy to use wrapper that does not keep cec-client running in background",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rafostar/cec-controller.git"
+  },
+  "keywords": [
+    "cec",
+    "cec-client",
+    "hdmi"
+  ],
+  "author": "Rafostar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rafostar/cec-controller/issues"
+  },
+  "homepage": "https://github.com/Rafostar/cec-controller#readme"
+}
