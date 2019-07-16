@@ -21,7 +21,9 @@ module.exports = class Client
 		var outArray = [];
 
 		try {
-			outStr = execSync(`echo 'scan' | cec-client -s -d 1`).toString();
+			outStr = execSync(`echo 'scan' | cec-client -s -d 1`,
+				{ stdio: 'pipe', windowsHide: true }).toString();
+
 			outArray = outStr.split('device #');
 		}
 		catch(err) {}
