@@ -8,7 +8,7 @@ Requires `cec-client` binary.
 var CecController = require('cec-controller');
 var cec = new CecController();
 
-console.log(cec)
+console.log(cec);
 /*
 {
   dev0: {
@@ -31,6 +31,6 @@ console.log(cec)
 }
 */
 cec.dev0.turnOn(); // Turn on device 0
-cec.setActive(); // Send source active signal from current device (switches TV input)
-cec.volumeUp(); // Increase TV or amplifier volume
+cec.setActive();   // Send source active signal from current device (switches TV input)
+cec.volumeUp();    // Increase TV or amplifier volume
 ```
