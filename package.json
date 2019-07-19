@@ -1,6 +1,6 @@
 {
   "name": "cec-controller",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Easy to use wrapper that does not keep cec-client running in background",
   "main": "index.js",
   "scripts": {
