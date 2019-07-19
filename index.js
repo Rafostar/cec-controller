@@ -76,11 +76,30 @@ module.exports = class Client
 		});
 	}
 
+	getStatus(device)
+	{
+		return new Promise((resolve, reject) =>
+		{
+			exec(`echo 'pow' ${device.address} | cec-client -s -d 1`, (error, stdout, stderr) =>
+			{
+				if(error) return resolve(null);
+
+				var linesArray = stdout.split('\n');
+				var result = linesArray.filter(line => line.includes('power status:'));
+				var status = result[0].split(':')[1].trim();
+
+				device.powerStatus = status;
+				resolve(status);
+			});
+		});
+	}
+
 	getDeviceFunctions(device)
 	{
 		return {
 			turnOn: this.command.bind(this, 'on', device.address),
-			turnOff: this.command.bind(this, 'standby', device.address)
+			turnOff: this.command.bind(this, 'standby', device.address),
+			getStatus: this.getStatus.bind(this, device)
 		}
 	}
 
