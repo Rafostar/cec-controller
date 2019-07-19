@@ -1,4 +1,7 @@
 # cec-controller
+[![License](https://img.shields.io/github/license/Rafostar/cec-controller.svg)](https://github.com/Rafostar/cec-controller/blob/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/cec-controller.svg)](https://www.npmjs.com/package/cec-controller)
+
 Easy to use wrapper that does not keep cec-client running in background
 
 Requires `cec-client` binary.
@@ -20,14 +23,15 @@ console.log(cec);
      cecVersion: '1.4',
      powerStatus: 'on',
      language: 'eng',
-     turnOn: [Function: bound command],    // Turn on dev0 (TV)
-     turnOff: [Function: bound command]    // Turn off dev0 (TV)
+     turnOn: [Function: bound command],      // Turn on dev0 (TV)
+     turnOff: [Function: bound command],     // Turn off dev0 (TV)
+     getStatus: [Function: bound getStatus]  // Returns updated device power status
   },
-  setActive: [Function: bound command],    // Send source active signal (switches TV input)
-  setInactive: [Function: bound command],  // Send source inactive signal
-  volumeUp: [Function: bound command],     // Increase amplifier volume
-  volumeDown: [Function: bound command],   // Decrease amplifier volume
-  mute: [Function: bound command]          // Mute amplifier
+  setActive: [Function: bound command],      // Send source active signal (switches TV input)
+  setInactive: [Function: bound command],    // Send source inactive signal
+  volumeUp: [Function: bound command],       // Increase amplifier volume
+  volumeDown: [Function: bound command],     // Decrease amplifier volume
+  mute: [Function: bound command]            // Mute amplifier
 }
 */
 ```
