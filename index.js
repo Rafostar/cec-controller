@@ -69,8 +69,11 @@ module.exports = class Client
 
 	command(action, address)
 	{
-		if(address) exec(`echo '${action} ${address}' | cec-client -s -d 1`);
-		else exec(`echo '${action}' | cec-client -s -d 1`);
+		return new Promise((resolve, reject) =>
+		{
+			if(address) exec(`echo '${action} ${address}' | cec-client -s -d 1`, () => resolve());
+			else exec(`echo '${action}' | cec-client -s -d 1`, () => resolve());
+		});
 	}
 
 	getDeviceFunctions(device)
