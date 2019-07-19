@@ -37,7 +37,7 @@ module.exports = class Client
 
 			if(!devName || !devId) return;
 
-			devicesObject['dev' + devId] = { name: devName };
+			devicesObject['dev' + devId] = { name: devName, logicalAddress: devId };
 
 			var data = device.split('\n');
 
@@ -67,11 +67,11 @@ module.exports = class Client
 		return devicesObject;
 	}
 
-	command(action, address)
+	command(action, logicalAddress)
 	{
 		return new Promise((resolve, reject) =>
 		{
-			if(address) exec(`echo '${action} ${address}' | cec-client -s -d 1`, () => resolve());
+			if(logicalAddress) exec(`echo '${action} ${logicalAddress}' | cec-client -s -d 1`, () => resolve());
 			else exec(`echo '${action}' | cec-client -s -d 1`, () => resolve());
 		});
 	}
@@ -80,7 +80,7 @@ module.exports = class Client
 	{
 		return new Promise((resolve, reject) =>
 		{
-			exec(`echo 'pow' ${device.address} | cec-client -s -d 1`, (error, stdout, stderr) =>
+			exec(`echo 'pow ${device.logicalAddress}' | cec-client -s -d 1`, (error, stdout, stderr) =>
 			{
 				if(error) return resolve(null);
 
@@ -97,8 +97,8 @@ module.exports = class Client
 	getDeviceFunctions(device)
 	{
 		return {
-			turnOn: this.command.bind(this, 'on', device.address),
-			turnOff: this.command.bind(this, 'standby', device.address),
+			turnOn: this.command.bind(this, 'on', device.logicalAddress),
+			turnOff: this.command.bind(this, 'standby', device.logicalAddress),
 			getStatus: this.getStatus.bind(this, device)
 		}
 	}
