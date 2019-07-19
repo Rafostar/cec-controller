@@ -71,8 +71,9 @@ module.exports = class Client
 	{
 		return new Promise((resolve, reject) =>
 		{
-			if(logicalAddress) exec(`echo '${action} ${logicalAddress}' | cec-client -s -d 1`, () => resolve());
-			else exec(`echo '${action}' | cec-client -s -d 1`, () => resolve());
+			if(!action) resolve();
+			else if(!logicalAddress) exec(`echo '${action}' | cec-client -s -d 1`, () => resolve());
+			else exec(`echo '${action} ${logicalAddress}' | cec-client -s -d 1`, () => resolve());
 		});
 	}
 
@@ -110,7 +111,8 @@ module.exports = class Client
 			setInactive: this.command.bind(this, 'is', null),
 			volumeUp: this.command.bind(this, 'volup', null),
 			volumeDown: this.command.bind(this, 'voldown', null),
-			mute: this.command.bind(this, 'mute', null)
+			mute: this.command.bind(this, 'mute', null),
+			command: (args) => { return this.command(args, null); }
 		}
 	}
 }
