@@ -16,6 +16,7 @@ console.log(cec);
 {
   dev0: {
      name: 'TV',
+     logicalAddress: '0',
      address: '0.0.0.0',
      activeSource: 'no',
      vendor: 'Samsung',
@@ -31,7 +32,8 @@ console.log(cec);
   setInactive: [Function: bound command],    // Send source inactive signal
   volumeUp: [Function: bound command],       // Increase amplifier volume
   volumeDown: [Function: bound command],     // Decrease amplifier volume
-  mute: [Function: bound command]            // Mute amplifier
+  mute: [Function: bound command],           // Mute amplifier
+  command: [Function: command]               // Send custom signal (arg is send as input to cec-client)
 }
 */
 ```
