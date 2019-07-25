@@ -7,9 +7,11 @@ const cecInit = require('./shared/init');
 const writeLine = require('./shared/writeLine');
 cecInit().then(test);
 
-function test()
+function test(obj)
 {
-	writeLine();
+	var cec = obj.cec;
+
+	writeLine('');
 	console.log('--- TV Remote Test ---');
 	writeLine('Press any button on TV remote');
 

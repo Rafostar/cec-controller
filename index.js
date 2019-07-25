@@ -18,8 +18,9 @@ module.exports = class Client
 		this.sourceNumber = 0;
 		this.keyReleaseTimeout = null;
 
-		this.cec = { ...EventEmitter.prototype, ...this._getGlobalFunctions() };
+		this.cec = new EventEmitter()
 		this.myDevice = null;
+		this.devices = {};
 
 		this._scanDevices();
 
@@ -33,19 +34,20 @@ module.exports = class Client
 		{
 			if(error) return this.cec.emit('error', new Error('App cec-client had an error!'));
 
-			const scannedDevices = this._parseScanOutput(String(stdout));
-			const scannedKeys = Object.keys(scannedDevices);
+			this.devices = this._parseScanOutput(String(stdout));
+
+			const scannedKeys = Object.keys(this.devices);
 			if(scannedKeys.length === 0)
 				return this.cec.emit('error', new Error('CEC scan did not find any devices!'));
 
-			this.myDevice = this._getMyDevice(scannedDevices);
+			this.myDevice = this._getMyDevice(this.devices);
 			if(!this.myDevice)
 				return this.cec.emit('error', new Error(`Could not obtain this CEC adapter info!`));
 
-			this.cec = { ...this.cec, ...scannedDevices };
+			for(var deviceId in this.devices)
+				this.devices[deviceId] = { ...this.devices[deviceId], ...this._getDeviceFunctions(deviceId) };
 
-			for(var deviceId in this.cec)
-				this.cec[deviceId] = { ...this.cec[deviceId], ...this._getDeviceFunctions(deviceId) };
+			this.devices = { ...this.devices, ...this._getGlobalFunctions() };
 
 			this._createClient();
 		});
@@ -116,13 +118,13 @@ module.exports = class Client
 	_createClient()
 	{
 		this.doneInit = false;
-		this.cecClient = spawn('cec-client',
+		this.client = spawn('cec-client',
 			['-t', this.type, '-o', this.osdString, '-d', 8],
 			{ stdio: ['pipe', 'pipe', 'ignore'] });
 
-		this.cecClient.stdin.setEncoding('utf8');
-		this.cecClient.stdout.on('data', (data) => this._parseClientOutput(String(data)));
-		this.cecClient.once('close', (code) =>
+		this.client.stdin.setEncoding('utf8');
+		this.client.stdout.on('data', (data) => this._parseClientOutput(String(data)));
+		this.client.once('close', (code) =>
 		{
 			if(this.doneInit) this._createClient();
 			else this.cec.emit('error', new Error(`App cec-client exited with code: ${code}`));
@@ -136,7 +138,7 @@ module.exports = class Client
 			if(this.myDevice && line.includes('waiting for input'))
 			{
 				this.doneInit = true;
-				this.cec.emit('ready');
+				this.cec.emit('ready', this.devices);
 			}
 
 			return;
@@ -144,27 +146,15 @@ module.exports = class Client
 
 		if(line.startsWith('power status:'))
 		{
-			var logicalAddress = this.cec[this.controlledDevice].logicalAddress;
+			var logicalAddress = this.devices[this.controlledDevice].logicalAddress;
 			var value = this._getLineValue(line);
 
-			this.cec[this.controlledDevice].powerStatus = value;
+			this.devices[this.controlledDevice].powerStatus = value;
 			this.cec.emit(`${logicalAddress}:powerStatus`, value);
-		}
-		else if(line.startsWith('active source:')
-			|| (line.startsWith('logical address') && line.includes('active')))
-		{
-			var logicalAddress = this.cec[this.myDevice].logicalAddress;
-			var value = null;
-
-			if(line.startsWith('logical address')) value = (line.includes('not')) ? 'no' : 'yes';
-			else value = this._getLineValue(line);
-
-			this.cec[this.myDevice].activeSource = value;
-			this.cec.emit(`${logicalAddress}:activeSource`, value);
 		}
 		else if(line.startsWith('TRAFFIC:') && line.includes('>>'))
 		{
-			var destAddress = this.cec[this.myDevice].logicalAddress;
+			var destAddress = this.devices[this.myDevice].logicalAddress;
 			var value = this._getLineValue(line).toUpperCase();
 
 			if(line.includes(`>> 0${destAddress}:44:`))
@@ -186,6 +176,22 @@ module.exports = class Client
 				}, 600);
 			}
 		}
+		else if(line.startsWith('TRAFFIC:') && line.includes('<<'))
+		{
+			var logicalAddress = this.devices[this.myDevice].logicalAddress;
+			var srcAddress = this.devices[this.myDevice].logicalAddress;
+
+			if(line.includes(`<< ${srcAddress}0:04`))
+			{
+				this.devices[this.myDevice].activeSource = 'yes';
+				this.cec.emit(`${logicalAddress}:activeSource`, 'yes');
+			}
+			else if(line.includes(`<< ${srcAddress}0:9d`))
+			{
+				this.devices[this.myDevice].activeSource = 'no';
+				this.cec.emit(`${logicalAddress}:activeSource`, 'no');
+			}
+		}
 	}
 
 	_getLineValue(line)
@@ -201,7 +207,7 @@ module.exports = class Client
 			turnOff: this.changePower.bind(this, deviceId, 'standby')
 		};
 
-		if(this.cec[deviceId].name === 'TV')
+		if(this.devices[deviceId].name === 'TV')
 		{
 			func.changeSource = (number) =>
 			{
@@ -211,8 +217,8 @@ module.exports = class Client
 					number = this.sourceNumber;
 				}
 
-				var srcAddress = this.cec[this.myDevice].logicalAddress;
-				var destAddress = (this.broadcast === false) ? this.cec[deviceId].logicalAddress : 'F';
+				var srcAddress = this.devices[this.myDevice].logicalAddress;
+				var destAddress = (this.broadcast === false) ? this.devices[deviceId].logicalAddress : 'F';
 
 				return this.command(`tx ${srcAddress}${destAddress}:82:${number}0:00`, null);
 			}
@@ -240,10 +246,10 @@ module.exports = class Client
 			if(!action || typeof action !== 'string') resolve(null);
 			else
 			{
-				if(!logicalAddress) this.cecClient.stdin.write(action);
-				else this.cecClient.stdin.write(`${action} ${logicalAddress}`);
+				if(!logicalAddress) this.client.stdin.write(action);
+				else this.client.stdin.write(`${action} ${logicalAddress}`);
 
-				this.cecClient.stdout.once('data', () => resolve(true));
+				this.client.stdout.once('data', () => resolve(true));
 			}
 		});
 	}
@@ -260,7 +266,7 @@ module.exports = class Client
 				else if(value === powerStatus) resolve(powerStatus);
 				else
 				{
-					this.command(powerStatus, this.cec[deviceId].logicalAddress);
+					this.command(powerStatus, this.devices[deviceId].logicalAddress);
 
 					var timedOut = false;
 					var actionTimeout = setTimeout(() => timedOut = true, 40000);
@@ -289,37 +295,27 @@ module.exports = class Client
 	{
 		return new Promise((resolve, reject) =>
 		{
+			var logicalAddress = this.devices[this.myDevice].logicalAddress;
 			var activeSource = (isActiveSource === 'yes' || isActiveSource === true) ? 'yes' : 'no';
 
-			this.getActive(this.myDevice).then(value =>
+			if(this.devices[this.myDevice].activeSource === activeSource) resolve(activeSource);
+			else
 			{
-				if(value === null) resolve(null);
-				else if(value === activeSource) resolve(activeSource);
-				else
+				var action = (activeSource === 'yes') ? 'as' : 'is';
+
+				var statusTimeout = setTimeout(() =>
 				{
-					var action = (activeSource === 'yes') ? 'as' : 'is';
-					this.command(action, null);
+					this.devices[this.myDevice].activeSource = 'Unknown';
+					this.cec.emit(`${logicalAddress}:activeSource`, null);
+				}, 3000);
 
-					var timedOut = false;
-					var actionTimeout = setTimeout(() => timedOut = true, 15000);
-
-					var waitActive = () =>
-					{
-						this.getActive(this.myDevice).then(value =>
-						{
-							if(value !== activeSource && !timedOut)
-								return waitActive();
-
-							clearTimeout(actionTimeout);
-
-							if(timedOut) resolve(null);
-							else resolve(activeSource);
-						});
-					}
-
-					waitActive();
-				}
-			});
+				this.command(action, null);
+				this.cec.once(`${logicalAddress}:activeSource`, (value) =>
+				{
+					clearTimeout(statusTimeout);
+					resolve(value);
+				});
+			}
 		});
 	}
 
@@ -329,41 +325,18 @@ module.exports = class Client
 
 		return new Promise((resolve, reject) =>
 		{
-			var logicalAddress = this.cec[deviceId].logicalAddress;
+			var logicalAddress = this.devices[deviceId].logicalAddress;
 
 			var statusTimeout = setTimeout(() =>
 			{
-				this.cec[deviceId].powerStatus = 'Unknown';
+				this.devices[deviceId].powerStatus = 'Unknown';
 				this.cec.emit(`${logicalAddress}:powerStatus`, null);
-			}, 10000);
+			}, 3000);
 
 			this.command(`pow ${logicalAddress}`);
 			this.cec.once(`${logicalAddress}:powerStatus`, (value) =>
 			{
 				clearTimeout(statusTimeout);
-				resolve(value);
-			});
-		});
-	}
-
-	getActive(deviceId)
-	{
-		this.controlledDevice = deviceId;
-
-		return new Promise((resolve, reject) =>
-		{
-			var logicalAddress = this.cec[deviceId].logicalAddress;
-
-			var activeTimeout = setTimeout(() =>
-			{
-				this.cec[deviceId].activeSource = 'Unknown';
-				this.cec.emit(`${logicalAddress}:activeSource`, null);
-			}, 10000);
-
-			this.command(`ad ${logicalAddress}`);
-			this.cec.once(`${logicalAddress}:activeSource`, (value) =>
-			{
-				clearTimeout(activeTimeout);
 				resolve(value);
 			});
 		});

@@ -9,18 +9,18 @@ module.exports = () =>
 		writeLine('CEC Controller initializing...');
 		var cec = new cecController();
 
-		cec.on('ready', async() =>
+		cec.on('ready', async(controller) =>
 		{
-			if(cec.dev0.powerStatus !== 'on')
+			if(controller.dev0.powerStatus === 'standby')
 			{
 				writeLine('Turning ON TV...');
-				await cec.dev0.turnOn();
+				await controller.dev0.turnOn();
 			}
 
 			writeLine('Setting this device as active source...');
-			await cec.setActive();
+			await controller.setActive();
 
-			resolve();
+			resolve({ controller, cec });
 		});
 
 		cec.on('error', (err) => writeLine(err.message));

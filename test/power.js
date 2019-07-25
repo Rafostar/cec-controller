@@ -6,17 +6,19 @@ const cecInit = require('./shared/init');
 const writeLine = require('./shared/writeLine');
 cecInit().then(test);
 
-function test()
+function test(obj)
 {
-	writeLine();
+	var ctl = obj.controller;
+
+	writeLine('');
 	console.log('--- TV Power Test ---');
-	writeLine(`Turning OFF in 10 sec...`);
-	setTimeout(powerOff, 10000);
+	writeLine('Turning OFF in 15 sec...');
+	setTimeout(() => powerOff(ctl), 15000);
 }
 
-async function powerOff()
+async function powerOff(ctl)
 {
 	writeLine('Turning OFF TV...');
-	await cec.dev0.turnOff();
+	await ctl.dev0.turnOff();
 	writeLine('TV should be in standby');
 }
