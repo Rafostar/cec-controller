@@ -1,7 +1,7 @@
 {
   "name": "cec-controller",
   "version": "0.1.2",
-  "description": "Easy to use wrapper that does not keep cec-client running in background",
+  "description": "Easy to use cec-client wrapper",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,6 +13,7 @@
   "keywords": [
     "cec",
     "cec-client",
+    "wrapper",
     "hdmi"
   ],
   "author": "Rafostar",

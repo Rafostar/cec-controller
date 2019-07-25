@@ -1,17 +1,20 @@
 # cec-controller
 [![License](https://img.shields.io/github/license/Rafostar/cec-controller.svg)](https://github.com/Rafostar/cec-controller/blob/master/LICENSE)
 [![npm](https://img.shields.io/npm/v/cec-controller.svg)](https://www.npmjs.com/package/cec-controller)
-
-Easy to use wrapper that does not keep cec-client running in background
+[![Downloads](https://img.shields.io/npm/dt/cec-controller.svg)](https://www.npmjs.com/package/cec-controller)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TFVDFD88KQ322)
+[![Donate](https://img.shields.io/badge/Donate-PayPal.Me-lightgrey.svg)](https://www.paypal.me/Rafostar)
 
 Requires `cec-client` binary.
 
 ### Usage Examples
 ```javascript
 var CecController = require('cec-controller');
-var cec = new CecController();
+var cecCtl = new CecController();
 
-console.log(cec);
+cecCtl.on('ready', (controller) => console.log(controller));
+cecCtl.on('error', console.error);
+
 /*
 {
   dev0: {
@@ -24,28 +27,62 @@ console.log(cec);
      cecVersion: '1.4',
      powerStatus: 'on',
      language: 'eng',
-     turnOn: [Function: bound command],      // Turn on dev0 (TV)
-     turnOff: [Function: bound command],     // Turn off dev0 (TV)
-     getStatus: [Function: bound getStatus]  // Returns updated device power status
+     turnOn: [Function: bound changePower],       // Turn on dev0 (TV)
+     turnOff: [Function: bound changePower],      // Turn off dev0 (TV)
+     changeSource: [Function] },                  // Switch HDMI input (optional arg is port number)
+  dev4: {
+     name: 'Playback 1',
+     logicalAddress: '4',
+     address: '3.0.0.0',
+     activeSource: 'no',
+     vendor: 'Pulse Eight',
+     osdString: 'CEC-Control',
+     cecVersion: '1.4',
+     powerStatus: 'on',
+     language: 'eng',
+     turnOn: [Function: bound changePower],
+     turnOff: [Function: bound changePower]
   },
-  setActive: [Function: bound command],      // Send source active signal (switches TV input)
-  setInactive: [Function: bound command],    // Send source inactive signal
-  volumeUp: [Function: bound command],       // Increase amplifier volume
-  volumeDown: [Function: bound command],     // Decrease amplifier volume
-  mute: [Function: bound command],           // Mute amplifier
-  command: [Function: command]               // Send custom signal (arg is send as input to cec-client)
+  setActive: [Function: bound changeActive],      // Send source active signal (switches TV input)
+  setInactive: [Function: bound changeActive],    // Send source inactive signal
+  volumeUp: [Function: bound command],            // Increase amplifier volume
+  volumeDown: [Function: bound command],          // Decrease amplifier volume
+  mute: [Function: bound command],                // Mute amplifier
+  command: [Function: command]                    // Send custom signal (arg is send as input to cec-client)
 }
 */
+```
+
+#### Receive TV remote input
+```javascript
+var CecController = require('cec-controller');
+var cecCtl = new CecController();
+
+cecCtl.on('ready', readyHandler);
+cecCtl.on('error', console.error);
+
+function readyHandler(controller)
+{
+	console.log('Turning ON TV...');
+
+	controller.dev0.turnOn().then(() =>
+	{
+		controller.setActive();
+		console.log('Press any button on TV remote');
+	});
+
+	cecCtl.on('keypress', (keyName) => console.log(`User pressed: ${keyName}`));
+}
 ```
 
 #### Asynchronous execution
 Each function returns a *Promise*. They are executed asynchronously by default.
 
 ```javascript
-cec.dev0.turnOn();
+controller.dev0.turnOn();
 console.log('Sending turn on signal to TV');
 
-setTimeout(() => cec.setActive(), 5000);
+setTimeout(() => controller.setActive(), 5000);
 console.log('Changing TV input source in 5 sec...');
 ```
 
@@ -55,18 +92,25 @@ Synchronous execution can be achieved by using *await* inside *async* function.
 ```javascript
 async function controlTv()
 {
-	await cec.dev0.turnOn();
+	await controller.dev0.turnOn();
 	console.log('Turned on TV');
 
-	await cec.setActive();
+	await controller.setActive();
 	console.log('Changed TV input source');
 }
 
 async function increaseVolume(count)
 {
-	while(count--) await cec.volumeUp();
+	while(count--) await controller.volumeUp();
 }
 
 controlTv();
 increaseVolume(3); // Increase volume 3 times
 ```
+
+Additional pre-made scripts can be found inside "test" folder.
+
+## Donation
+If you like my work please support it by buying me a cup of coffee :-)
+
+[![PayPal](https://github.com/Rafostar/gnome-shell-extension-cast-to-tv/wiki/images/paypal.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TFVDFD88KQ322)
