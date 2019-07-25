@@ -1,6 +1,6 @@
 {
   "name": "cec-controller",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "Easy to use cec-client wrapper",
   "main": "index.js",
   "scripts": {
