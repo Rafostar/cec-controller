@@ -1,5 +1,6 @@
 const { exec, spawn } = require('child_process');
 const { EventEmitter } = require('events');
+const debug = require('debug')('cec-controller');
 const getKeyName = require('./keymap');
 
 module.exports = class Client
@@ -17,8 +18,9 @@ module.exports = class Client
 		this.controlledDevice = 'dev0';
 		this.sourceNumber = 0;
 		this.keyReleaseTimeout = null;
+		this.togglingPower = false;
 
-		this.cec = new EventEmitter()
+		this.cec = new EventEmitter();
 		this.myDevice = null;
 		this.devices = {};
 
@@ -29,25 +31,42 @@ module.exports = class Client
 
 	_scanDevices()
 	{
+		debug('Performing initial devices scan...');
+
 		exec(`echo scan | cec-client -s -t ${this.type} -o ${this.osdString} -d 1`,
 			{ maxBuffer: 5 * 1024 * 1024, windowsHide: true }, (error, stdout, stderr) =>
 		{
-			if(error) return this.cec.emit('error', new Error('App cec-client had an error!'));
+			if(error)
+			{
+				debug(error);
+				return this.cec.emit('error', new Error('App cec-client had an error!'));
+			}
 
+			debug('Devices scan finished successfully');
 			this.devices = this._parseScanOutput(String(stdout));
 
 			const scannedKeys = Object.keys(this.devices);
 			if(scannedKeys.length === 0)
-				return this.cec.emit('error', new Error('CEC scan did not find any devices!'));
+			{
+				const scanErr = new Error('CEC scan did not find any devices!');
+				debug(scanErr);
+				return this.cec.emit('error', scanErr);
+			}
 
 			this.myDevice = this._getMyDevice(this.devices);
 			if(!this.myDevice)
-				return this.cec.emit('error', new Error(`Could not obtain this CEC adapter info!`));
+			{
+				const myDeviceErr = new Error(`Could not obtain this CEC adapter info!`);
+				debug(myDeviceErr);
+				return this.cec.emit('error', myDeviceErr);
+			}
 
 			for(var deviceId in this.devices)
 				this.devices[deviceId] = { ...this.devices[deviceId], ...this._getDeviceFunctions(deviceId) };
 
 			this.devices = { ...this.devices, ...this._getGlobalFunctions() };
+			debug('Finished controller object assembly');
+			debug(this.devices);
 
 			this._createClient();
 		});
@@ -108,10 +127,12 @@ module.exports = class Client
 
 			if(currObj.hasOwnProperty('osdString') && currObj.osdString === this.osdString)
 			{
+				debug(`Detected this device as: ${key}`);
 				return key;
 			}
 		}
 
+		debug('Could not detect this device!');
 		return null;
 	}
 
@@ -123,9 +144,12 @@ module.exports = class Client
 			{ stdio: ['pipe', 'pipe', 'ignore'] });
 
 		this.client.stdin.setEncoding('utf8');
+		this.client.stdout.once('data', () => debug('cec-client background process started'));
 		this.client.stdout.on('data', (data) => this._parseClientOutput(String(data)));
 		this.client.once('close', (code) =>
 		{
+			debug(`cec-client exited with code: ${code}`);
+
 			if(this.doneInit) this._createClient();
 			else this.cec.emit('error', new Error(`App cec-client exited with code: ${code}`));
 		});
@@ -138,18 +162,24 @@ module.exports = class Client
 			if(this.myDevice && line.includes('waiting for input'))
 			{
 				this.doneInit = true;
+				debug('cec-client init successful');
 				this.cec.emit('ready', this.devices);
 			}
 
 			return;
 		}
 
-		if(line.startsWith('power status:'))
+		if(line.startsWith(`power status:`))
 		{
 			var logicalAddress = this.devices[this.controlledDevice].logicalAddress;
 			var value = this._getLineValue(line);
 
-			this.devices[this.controlledDevice].powerStatus = value;
+			if(this.devices[this.controlledDevice].powerStatus !== value)
+			{
+				debug(`Updated dev${logicalAddress} powerStatus using stdout to: ${value}`);
+				this.devices[this.controlledDevice].powerStatus = value;
+			}
+
 			this.cec.emit(`${logicalAddress}:powerStatus`, value);
 		}
 		else if(line.startsWith('TRAFFIC:') && line.includes('>>'))
@@ -178,18 +208,19 @@ module.exports = class Client
 		}
 		else if(line.startsWith('TRAFFIC:') && line.includes('<<'))
 		{
-			var logicalAddress = this.devices[this.myDevice].logicalAddress;
 			var srcAddress = this.devices[this.myDevice].logicalAddress;
 
 			if(line.includes(`<< ${srcAddress}0:04`))
 			{
+				debug(`Updated dev${srcAddress} activeSource using stdout to: yes`);
 				this.devices[this.myDevice].activeSource = 'yes';
-				this.cec.emit(`${logicalAddress}:activeSource`, 'yes');
+				this.cec.emit(`${srcAddress}:activeSource`, 'yes');
 			}
 			else if(line.includes(`<< ${srcAddress}0:9d`))
 			{
+				debug(`Updated dev${srcAddress} activeSource using stdout to: no`);
 				this.devices[this.myDevice].activeSource = 'no';
-				this.cec.emit(`${logicalAddress}:activeSource`, 'no');
+				this.cec.emit(`${srcAddress}:activeSource`, 'no');
 			}
 		}
 	}
@@ -246,8 +277,14 @@ module.exports = class Client
 			if(!action || typeof action !== 'string') resolve(null);
 			else
 			{
-				if(!logicalAddress) this.client.stdin.write(action);
-				else this.client.stdin.write(`${action} ${logicalAddress}`);
+				var cmd = '';
+				if(logicalAddress) cmd = `${action} ${logicalAddress}`;
+				else cmd = action;
+
+				if(!this.togglingPower)
+					debug(`Running command: ${cmd}`);
+
+				this.client.stdin.write(cmd);
 
 				this.client.stdout.once('data', () => resolve(true));
 			}
@@ -263,7 +300,11 @@ module.exports = class Client
 			this.getStatus(deviceId).then(value =>
 			{
 				if(value === null) resolve(null);
-				else if(value === powerStatus) resolve(powerStatus);
+				else if(value === powerStatus)
+				{
+					debug(`${deviceId} powerStatus is already in desired state`);
+					resolve(powerStatus);
+				}
 				else
 				{
 					this.command(powerStatus, this.devices[deviceId].logicalAddress);
@@ -279,12 +320,23 @@ module.exports = class Client
 								return waitPower();
 
 							clearTimeout(actionTimeout);
+							this.togglingPower = false;
 
-							if(timedOut) resolve(null);
-							else resolve(powerStatus);
+							if(timedOut)
+							{
+								debug(`${deviceId} powerStatus change timed out!`);
+								resolve(null);
+							}
+							else
+							{
+								debug(`${deviceId} powerStatus changed to: ${powerStatus}`);
+								resolve(powerStatus);
+							}
 						});
 					}
 
+					debug(`Waiting for ${deviceId} powerStatus change to: ${powerStatus}`);
+					this.togglingPower = true;
 					waitPower();
 				}
 			});
@@ -305,14 +357,16 @@ module.exports = class Client
 
 				var statusTimeout = setTimeout(() =>
 				{
-					this.devices[this.myDevice].activeSource = 'Unknown';
+					debug(`dev${logicalAddress} activeSource change timed out!`);
+					this.devices[this.myDevice].activeSource = null;
 					this.cec.emit(`${logicalAddress}:activeSource`, null);
-				}, 3000);
+				}, 5000);
 
 				this.command(action, null);
 				this.cec.once(`${logicalAddress}:activeSource`, (value) =>
 				{
 					clearTimeout(statusTimeout);
+					debug(`dev${logicalAddress} activeSource changed to: ${value}`);
 					resolve(value);
 				});
 			}
@@ -329,14 +383,23 @@ module.exports = class Client
 
 			var statusTimeout = setTimeout(() =>
 			{
-				this.devices[deviceId].powerStatus = 'Unknown';
+				if(!this.togglingPower)
+				{
+					debug(`dev${logicalAddress} getStatus timed out!`);
+					this.devices[deviceId].powerStatus = null;
+				}
+
 				this.cec.emit(`${logicalAddress}:powerStatus`, null);
-			}, 3000);
+			}, 5000);
 
 			this.command(`pow ${logicalAddress}`);
 			this.cec.once(`${logicalAddress}:powerStatus`, (value) =>
 			{
 				clearTimeout(statusTimeout);
+
+				if(!this.togglingPower)
+					debug(`dev${logicalAddress} powerStatus is: ${value}`);
+
 				resolve(value);
 			});
 		});

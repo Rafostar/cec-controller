@@ -12,8 +12,8 @@ function test(obj)
 
 	writeLine('');
 	console.log('--- TV Power Test ---');
-	writeLine('Turning OFF in 15 sec...');
-	setTimeout(() => powerOff(ctl), 15000);
+	writeLine('Turning OFF in 30 sec...');
+	setTimeout(() => powerOff(ctl), 30000);
 }
 
 async function powerOff(ctl)

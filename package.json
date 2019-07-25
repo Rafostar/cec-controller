@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/Rafostar/cec-controller/issues"
   },
-  "homepage": "https://github.com/Rafostar/cec-controller#readme"
+  "homepage": "https://github.com/Rafostar/cec-controller#readme",
+  "dependencies": {
+    "debug": "^4.1.1"
+  }
 }
