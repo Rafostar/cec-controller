@@ -19,14 +19,22 @@ module.exports = class Client
 		this.sourceNumber = 0;
 		this.keyReleaseTimeout = null;
 		this.togglingPower = false;
+		this.enabled = true;
 
 		this.cec = new EventEmitter();
+		this.cec.closeClient = () => this._closeClient();
 		this.myDevice = null;
 		this.devices = {};
 
 		this._scanDevices();
 
 		return this.cec;
+	}
+
+	_closeClient()
+	{
+		this.enabled = false;
+		if(this.client) this.client.kill();
 	}
 
 	_scanDevices()
@@ -148,81 +156,88 @@ module.exports = class Client
 		this.client.stdout.on('data', (data) => this._parseClientOutput(String(data)));
 		this.client.once('close', (code) =>
 		{
+			this.client = null;
 			debug(`cec-client exited with code: ${code}`);
 
-			if(this.doneInit) this._createClient();
-			else this.cec.emit('error', new Error(`App cec-client exited with code: ${code}`));
+			if(this.doneInit && this.enabled) this._createClient();
+			else if(this.enabled) this.cec.emit('error', new Error(`App cec-client exited with code: ${code}`));
 		});
 	}
 
-	_parseClientOutput(line)
+	_parseClientOutput(data)
 	{
-		if(!this.doneInit)
+		var lines = data.split('\n');
+		lines.forEach(line =>
 		{
-			if(this.myDevice && line.includes('waiting for input'))
+			if(line.length < 5) return;
+
+			if(!this.doneInit)
 			{
-				this.doneInit = true;
-				debug('cec-client init successful');
-				this.cec.emit('ready', this.devices);
-			}
-
-			return;
-		}
-
-		if(line.startsWith(`power status:`))
-		{
-			var logicalAddress = this.devices[this.controlledDevice].logicalAddress;
-			var value = this._getLineValue(line);
-
-			if(this.devices[this.controlledDevice].powerStatus !== value)
-			{
-				debug(`Updated dev${logicalAddress} powerStatus using stdout to: ${value}`);
-				this.devices[this.controlledDevice].powerStatus = value;
-			}
-
-			this.cec.emit(`${logicalAddress}:powerStatus`, value);
-		}
-		else if(line.startsWith('TRAFFIC:') && line.includes('>>'))
-		{
-			var destAddress = this.devices[this.myDevice].logicalAddress;
-			var value = this._getLineValue(line).toUpperCase();
-
-			if(line.includes(`>> 0${destAddress}:44:`))
-			{
-				this.cec.emit('keypress', getKeyName(value));
-
-				if(!this.keyReleaseTimeout)
-					this.cec.emit('keydown', getKeyName(value));
-			}
-			else if(line.includes(`>> 0${destAddress}:8b:`))
-			{
-				if(this.keyReleaseTimeout)
-					clearTimeout(this.keyReleaseTimeout);
-
-				this.keyReleaseTimeout = setTimeout(() =>
+				if(this.myDevice && line.includes('waiting for input'))
 				{
-					this.cec.emit('keyup', getKeyName(value));
-					this.keyReleaseTimeout = null;
-				}, 600);
-			}
-		}
-		else if(line.startsWith('TRAFFIC:') && line.includes('<<'))
-		{
-			var srcAddress = this.devices[this.myDevice].logicalAddress;
+					this.doneInit = true;
+					debug('cec-client init successful');
+					this.cec.emit('ready', this.devices);
+				}
 
-			if(line.includes(`<< ${srcAddress}0:04`))
-			{
-				debug(`Updated dev${srcAddress} activeSource using stdout to: yes`);
-				this.devices[this.myDevice].activeSource = 'yes';
-				this.cec.emit(`${srcAddress}:activeSource`, 'yes');
+				return;
 			}
-			else if(line.includes(`<< ${srcAddress}0:9d`))
-			{
-				debug(`Updated dev${srcAddress} activeSource using stdout to: no`);
-				this.devices[this.myDevice].activeSource = 'no';
-				this.cec.emit(`${srcAddress}:activeSource`, 'no');
+
+			if(line.startsWith(`power status:`))
+			{console.log('\n' + line);
+				var logicalAddress = this.devices[this.controlledDevice].logicalAddress;
+				var value = this._getLineValue(line);
+
+				if(this.devices[this.controlledDevice].powerStatus !== value)
+				{
+					debug(`Updated dev${logicalAddress} powerStatus using stdout to: ${value}`);
+					this.devices[this.controlledDevice].powerStatus = value;
+				}
+
+				this.cec.emit(`${logicalAddress}:powerStatus`, value);
 			}
-		}
+			else if(line.startsWith('TRAFFIC:') && line.includes('>>'))
+			{
+				var destAddress = this.devices[this.myDevice].logicalAddress;
+				var value = this._getLineValue(line).toUpperCase();
+
+				if(line.includes(`>> 0${destAddress}:44:`))
+				{
+					this.cec.emit('keypress', getKeyName(value));
+
+					if(!this.keyReleaseTimeout)
+						this.cec.emit('keydown', getKeyName(value));
+				}
+				else if(line.includes(`>> 0${destAddress}:8b:`))
+				{
+					if(this.keyReleaseTimeout)
+						clearTimeout(this.keyReleaseTimeout);
+
+					this.keyReleaseTimeout = setTimeout(() =>
+					{
+						this.cec.emit('keyup', getKeyName(value));
+						this.keyReleaseTimeout = null;
+					}, 600);
+				}
+			}
+			else if(line.startsWith('TRAFFIC:') && line.includes('<<'))
+			{
+				var srcAddress = this.devices[this.myDevice].logicalAddress;
+
+				if(line.includes(`<< ${srcAddress}0:04`))
+				{
+					debug(`Updated dev${srcAddress} activeSource using stdout to: yes`);
+					this.devices[this.myDevice].activeSource = 'yes';
+					this.cec.emit(`${srcAddress}:activeSource`, 'yes');
+				}
+				else if(line.includes(`<< ${srcAddress}0:9d`))
+				{
+					debug(`Updated dev${srcAddress} activeSource using stdout to: no`);
+					this.devices[this.myDevice].activeSource = 'no';
+					this.cec.emit(`${srcAddress}:activeSource`, 'no');
+				}
+			}
+		});
 	}
 
 	_getLineValue(line)
