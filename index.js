@@ -184,7 +184,7 @@ module.exports = class Client
 			}
 
 			if(line.startsWith(`power status:`))
-			{console.log('\n' + line);
+			{
 				var logicalAddress = this.devices[this.controlledDevice].logicalAddress;
 				var value = this._getLineValue(line);
 
