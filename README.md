@@ -5,7 +5,8 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TFVDFD88KQ322)
 [![Donate](https://img.shields.io/badge/Donate-PayPal.Me-lightgrey.svg)](https://www.paypal.me/Rafostar)
 
-Requires `cec-client` binary.
+Requires CEC capable device (e.g. Raspberry Pi or USB-CEC adapter).<br>
+Additionally `cec-client` must be installed. On Raspbian it is included in cec-utils package.
 
 ### Usage Examples
 ```javascript
