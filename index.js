@@ -225,6 +225,7 @@ module.exports = class Client
 			else if(line.startsWith('TRAFFIC:') && line.includes('<<'))
 			{
 				var srcAddress = this.devices[this.myDevice].logicalAddress;
+				var destAddress = this.devices[this.controlledDevice].logicalAddress;
 
 				if(line.includes(`<< ${srcAddress}0:04`))
 				{
@@ -237,6 +238,14 @@ module.exports = class Client
 					debug(`Updated dev${srcAddress} activeSource using stdout to: no`);
 					this.devices[this.myDevice].activeSource = 'no';
 					this.cec.emit(`${srcAddress}:activeSource`, 'no');
+				}
+				else if(line.includes(`<< ${srcAddress}${destAddress}:44`))
+				{
+					var value = this._getLineValue(line).toUpperCase();
+					var keyName = keymap.getName(value);
+
+					debug(`Send "${keyName}" key to dev${destAddress}`);
+					this.cec.emit('sendKey', keyName);
 				}
 			}
 		});
@@ -272,6 +281,59 @@ module.exports = class Client
 			}
 		}
 
+		if(this.devices[deviceId] !== this.devices[this.myDevice])
+		{
+			func.sendKey = (keyName) =>
+			{
+				this.controlledDevice = deviceId;
+
+				var srcAddress = this.devices[this.myDevice].logicalAddress;
+				var destAddress = (this.broadcast === false) ? this.devices[deviceId].logicalAddress : 'F';
+
+				return new Promise((resolve, reject) =>
+				{
+					var keyHex = keymap.getHex(keyName);
+
+					if(!keyHex)
+					{
+						debug(`Unknown key name: ${keyName}`);
+						resolve(null);
+					}
+					else
+					{
+						var sendKeyTimeout = setTimeout(() =>
+						{
+							sendKeyTimeout = null;
+							debug(`dev${destAddress} send key timed out!`);
+							sendKeyHandler(null);
+						}, 1000);
+
+						var sendKeyHandler = (value) =>
+						{
+							if(value === keyName || value === null)
+							{
+								if(sendKeyTimeout)
+									clearTimeout(sendKeyTimeout);
+
+								this.cec.removeListener('sendKey', sendKeyHandler);
+
+								if(!value)
+								{
+									debug(`dev${destAddress} could not receive key!`);
+									resolve(null);
+								}
+								else
+									resolve(true);
+							}
+						}
+
+						this.cec.on('sendKey', sendKeyHandler);
+						this.command(`tx ${srcAddress}${destAddress}:44:${keyHex}`, null);
+					}
+				});
+			}
+		}
+
 		return func;
 	}
 
@@ -283,6 +345,7 @@ module.exports = class Client
 			volumeUp: this.command.bind(this, 'volup', null),
 			volumeDown: this.command.bind(this, 'voldown', null),
 			mute: this.command.bind(this, 'mute', null),
+			getKeyNames: keymap.getNamesArray.bind(this),
 			command: (args) => { return this.command(args, null); }
 		}
 	}

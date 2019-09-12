@@ -8,6 +8,11 @@ module.exports =
 	getHex: function(name)
 	{
 		return Object.keys(keyNames).find(hex => keyNames[hex] === name);
+	},
+
+	getNamesArray: function()
+	{
+		return Object.values(keyNames);
 	}
 }
 
