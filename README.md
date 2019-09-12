@@ -49,9 +49,29 @@ cecCtl.on('error', console.error);
   volumeUp: [Function: bound command],            // Increase amplifier volume
   volumeDown: [Function: bound command],          // Decrease amplifier volume
   mute: [Function: bound command],                // Mute amplifier
+  getKeyNames: [Function: bound getNamesArray]    // Returns list of supported key names in array (for use with sendKey())
   command: [Function: command]                    // Send custom signal (arg is send as input to cec-client)
 }
 */
+```
+
+#### Send TV remote key presses
+Send key press event to your TV, player or receiver. Get the list of available key names with `cecCtl.getKeyNames()`.
+```javascript
+var CecController = require('cec-controller');
+var cecCtl = new CecController();
+
+cecCtl.on('ready', readyHandler);
+cecCtl.on('error', console.error);
+
+function readyHandler(controller)
+{
+	controller.setActive().then(() =>
+	{
+		console.log('Send "up" key to TV');
+		controller.dev0.sendKey('up');
+	});
+}
 ```
 
 #### Receive TV remote input
