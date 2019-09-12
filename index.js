@@ -1,7 +1,7 @@
 const { exec, spawn } = require('child_process');
 const { EventEmitter } = require('events');
 const debug = require('debug')('cec-controller');
-const getKeyName = require('./keymap');
+const keymap = require('./keymap');
 
 module.exports = class Client
 {
@@ -203,10 +203,12 @@ module.exports = class Client
 
 				if(line.includes(`>> 0${destAddress}:44:`))
 				{
-					this.cec.emit('keypress', getKeyName(value));
+					var keyName = keymap.getName(value);
+
+					this.cec.emit('keypress', keyName);
 
 					if(!this.keyReleaseTimeout)
-						this.cec.emit('keydown', getKeyName(value));
+						this.cec.emit('keydown', keyName);
 				}
 				else if(line.includes(`>> 0${destAddress}:8b:`))
 				{
@@ -215,7 +217,7 @@ module.exports = class Client
 
 					this.keyReleaseTimeout = setTimeout(() =>
 					{
-						this.cec.emit('keyup', getKeyName(value));
+						this.cec.emit('keyup', keymap.getName(value));
 						this.keyReleaseTimeout = null;
 					}, 600);
 				}
