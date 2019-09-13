@@ -98,7 +98,7 @@ module.exports = class Client
 			var devName = device.substring(device.indexOf(':') + 2, device.indexOf('\n'));
 			var devId = device.substring(0, device.indexOf(':'));
 
-			if(!devName || !devId) return;
+			if(!devName || !devId || isNaN(devId)) return;
 
 			devicesObject['dev' + devId] = { name: devName, logicalAddress: devId };
 
