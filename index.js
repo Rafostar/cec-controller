@@ -288,7 +288,7 @@ module.exports = class Client
 				this.controlledDevice = deviceId;
 
 				var srcAddress = this.devices[this.myDevice].logicalAddress;
-				var destAddress = (this.broadcast === false) ? this.devices[deviceId].logicalAddress : 'F';
+				var destAddress = this.devices[deviceId].logicalAddress;
 
 				return new Promise((resolve, reject) =>
 				{
@@ -328,7 +328,10 @@ module.exports = class Client
 						}
 
 						this.cec.on('sendKey', sendKeyHandler);
-						this.command(`tx ${srcAddress}${destAddress}:44:${keyHex}`, null);
+
+						var sendCmd = `tx ${srcAddress}${destAddress}:44:${keyHex}`;
+						debug(`Command: ${sendCmd}`);
+						this.command(sendCmd, null);
 					}
 				});
 			}
