@@ -8,6 +8,8 @@
 Requires CEC capable device (e.g. Raspberry Pi or USB-CEC adapter).<br>
 Additionally `cec-client` must be installed. On Raspbian it is included in cec-utils package.
 
+Controller scans devices on startup. It takes a while (scan is done async and result is returned in "ready" event).
+
 ### Usage Examples
 ```javascript
 var CecController = require('cec-controller');
@@ -49,12 +51,36 @@ cecCtl.on('error', console.error);
   volumeUp: [Function: bound command],            // Increase amplifier volume
   volumeDown: [Function: bound command],          // Decrease amplifier volume
   mute: [Function: bound command],                // Mute amplifier
+  getKeyNames: [Function: bound getNamesArray]    // Returns array of supported keys (for use with sendKey())
   command: [Function: command]                    // Send custom signal (arg is send as input to cec-client)
 }
 */
 ```
 
+#### Send TV remote key presses
+Send key press to your TV, player or receiver. Get the list of available key names with `cecCtl.getKeyNames()`.
+```javascript
+var CecController = require('cec-controller');
+var cecCtl = new CecController();
+
+cecCtl.on('ready', readyHandler);
+cecCtl.on('error', console.error);
+
+function readyHandler(controller)
+{
+	/* In this example dev1 is a satellite decoder */
+	controller.dev1.sendKey('up').then((success) =>
+	{
+		if(success)
+			console.log('Successfully send "up" key to decoder');
+		else
+			console.error('Could not send input key!');
+	});
+}
+```
+
 #### Receive TV remote input
+Use `keypress`, `keydown` or `keyup` events to implement code logic that depends on the pressed TV remote button.
 ```javascript
 var CecController = require('cec-controller');
 var cecCtl = new CecController();
