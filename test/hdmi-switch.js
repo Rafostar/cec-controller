@@ -1,6 +1,6 @@
 /*
    Toggles between 3 available HDMI ports.
-   Port number can be set with 'hdmiPorts' option when creating new cec-controller object.
+   Number of HDMI ports can be set with 'hdmiPorts' option when creating new cec-controller object.
    Desired port number can also be passed to 'changeSource()' function
    (e.g. ctl.dev0.changeSource(2) should switch to input 2).
 */
@@ -13,7 +13,6 @@ function test(obj)
 {
 	var ctl = obj.controller;
 
-	writeLine('');
 	console.log('--- TV HDMI Switch Test ---');
 
 	writeLine(`Switching port every 5 sec...`);

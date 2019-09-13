@@ -20,6 +20,7 @@ module.exports = () =>
 			writeLine('Setting this device as active source...');
 			await controller.setActive();
 
+			writeLine('');
 			resolve({ controller, cec });
 		});
 

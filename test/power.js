@@ -10,7 +10,6 @@ function test(obj)
 {
 	var ctl = obj.controller;
 
-	writeLine('');
 	console.log('--- TV Power Test ---');
 	writeLine('Turning OFF in 30 sec...');
 	setTimeout(() => powerOff(ctl), 30000);

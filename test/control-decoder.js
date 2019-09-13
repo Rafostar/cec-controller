@@ -1,5 +1,6 @@
 /*
-   Use arrow keys from your PC as arrows buttons to control TV.
+   Use arrow keys from your PC as arrows buttons to control decoder.
+   Select with "Spacebar". Close app with Ctrl+c.
 */
 
 const cecInit = require('./shared/init');
@@ -12,7 +13,7 @@ var enabled = true;
 
 function test(obj)
 {
-	console.log('--- Control dev1 with keyboard arrow keys, select with "Spacebar" ---\n');
+	console.log('--- Control dev1 with keyboard arrow keys, select with "Spacebar" ---');
 
 	process.stdin.on('data', async(key) =>
 	{

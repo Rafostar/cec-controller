@@ -32,7 +32,9 @@ cecCtl.on('error', console.error);
      language: 'eng',
      turnOn: [Function: bound changePower],       // Turn on dev0 (TV)
      turnOff: [Function: bound changePower],      // Turn off dev0 (TV)
-     changeSource: [Function] },                  // Switch HDMI input (optional arg is port number)
+     changeSource: [Function],                    // Switch HDMI input (optional arg is port number)
+     sendKey: [Function]                          // Send key press to this device
+  },
   dev4: {
      name: 'Playback 1',
      logicalAddress: '4',
@@ -51,7 +53,7 @@ cecCtl.on('error', console.error);
   volumeUp: [Function: bound command],            // Increase amplifier volume
   volumeDown: [Function: bound command],          // Decrease amplifier volume
   mute: [Function: bound command],                // Mute amplifier
-  getKeyNames: [Function: bound getNamesArray]    // Returns array of supported keys (for use with sendKey())
+  getKeyNames: [Function: bound getNamesArray],   // Returns array of supported keys (for use with sendKey())
   command: [Function: command]                    // Send custom signal (arg is send as input to cec-client)
 }
 */
@@ -135,7 +137,7 @@ controlTv();
 increaseVolume(3); // Increase volume 3 times
 ```
 
-Additional pre-made scripts can be found inside "test" folder.
+Additional pre-made runnable scripts can be found inside "test" folder.
 
 ## Donation
 If you like my work please support it by buying me a cup of coffee :-)

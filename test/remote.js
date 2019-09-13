@@ -11,7 +11,6 @@ function test(obj)
 {
 	var cec = obj.cec;
 
-	writeLine('');
 	console.log('--- TV Remote Test ---');
 	writeLine('Press any button on TV remote');
 
