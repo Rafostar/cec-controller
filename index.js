@@ -33,8 +33,16 @@ module.exports = class Client
 
 	_closeClient()
 	{
-		this.enabled = false;
-		if(this.client) this.client.kill();
+		return new Promise((resolve, reject) =>
+		{
+			this.enabled = false;
+			if(this.client) this.client.kill();
+
+			this.cec.removeAllListeners();
+			this.cec = null;
+
+			resolve(true);
+		});
 	}
 
 	_scanDevices()
