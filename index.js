@@ -96,10 +96,11 @@ module.exports = class Client
 	{
 		var devicesObject = {};
 		var outArray = outStr.split('device #');
-		outArray.shift();
 
 		if(outArray.length > 1)
 		{
+			outArray.shift();
+
 			outArray.forEach(device =>
 			{
 				var devName = device.substring(device.indexOf(':') + 2, device.indexOf('\n'));
