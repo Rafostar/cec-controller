@@ -12,7 +12,10 @@ module.exports =
 
 	getNamesArray: function()
 	{
-		return Object.values(keyNames);
+		return new Promise((resolve) =>
+		{
+			resolve(Object.values(keyNames));
+		});
 	}
 }
 
