@@ -307,7 +307,8 @@ module.exports = class Client
 	{
 		var func = {
 			turnOn: this.changePower.bind(this, deviceId, 'on'),
-			turnOff: this.changePower.bind(this, deviceId, 'standby')
+			turnOff: this.changePower.bind(this, deviceId, 'standby'),
+			togglePower: this.togglePower.bind(this, deviceId)
 		};
 
 		if(this.devices[deviceId].name === 'TV')
@@ -468,6 +469,23 @@ module.exports = class Client
 					this.togglingPower = true;
 					waitPower();
 				}
+			});
+		});
+	}
+
+	togglePower(deviceId)
+	{
+		return new Promise((resolve, reject) =>
+		{
+			this.getStatus(deviceId).then(value =>
+			{
+				var action = (value === 'on') ? 'standby'
+					: (value === 'standby') ? 'on' : null;
+
+				if(action)
+					this.changePower(deviceId, action).then(resolve);
+				else
+					resolve(null);
 			});
 		});
 	}
