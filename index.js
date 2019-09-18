@@ -315,9 +315,9 @@ module.exports = class Client
 		{
 			func.changeSource = (number) =>
 			{
-				if(isNaN(number) || number < 1)
+				if(isNaN(number) || number < 0)
 				{
-					this.sourceNumber = (this.sourceNumber < this.hdmiPorts) ? this.sourceNumber + 1 : 1;
+					this.sourceNumber = (this.sourceNumber < this.hdmiPorts) ? this.sourceNumber + 1 : 0;
 					number = this.sourceNumber;
 				}
 
