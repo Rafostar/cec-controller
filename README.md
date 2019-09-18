@@ -32,6 +32,7 @@ cecCtl.on('error', console.error);
      language: 'eng',
      turnOn: [Function: bound changePower],       // Turn on dev0 (TV)
      turnOff: [Function: bound changePower],      // Turn off dev0 (TV)
+     togglePower: [Function: bound togglePower],  // Transition to power "on" from "standby" and vice versa
      changeSource: [Function],                    // Switch HDMI input (optional arg is port number)
      sendKey: [Function]                          // Send key press to this device
   },
@@ -46,7 +47,8 @@ cecCtl.on('error', console.error);
      powerStatus: 'on',
      language: 'eng',
      turnOn: [Function: bound changePower],
-     turnOff: [Function: bound changePower]
+     turnOff: [Function: bound changePower],
+     togglePower: [Function: bound togglePower]
   },
   setActive: [Function: bound changeActive],      // Send source active signal (switches TV input)
   setInactive: [Function: bound changeActive],    // Send source inactive signal
