@@ -511,8 +511,14 @@ module.exports = class Client
 					{
 						this.getStatus(deviceId).then(value =>
 						{
-							if(value !== powerStatus && !timedOut)
+							if(powerStatus === 'standby' && value === 'unknown')
+							{
+								ctl_debug(`Could not detect ${deviceId} powerStatus!`);
+							}
+							else if(value !== powerStatus && !timedOut)
+							{
 								return waitPower();
+							}
 
 							clearTimeout(actionTimeout);
 							this.togglingPower = false;
@@ -524,8 +530,8 @@ module.exports = class Client
 							}
 							else
 							{
-								ctl_debug(`${deviceId} powerStatus changed to: ${powerStatus}`);
-								resolve(powerStatus);
+								ctl_debug(`${deviceId} powerStatus changed to: ${value}`);
+								resolve(value);
 							}
 						});
 					}
