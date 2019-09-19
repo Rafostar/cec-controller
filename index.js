@@ -281,6 +281,39 @@ module.exports = class Client
 								this._checkDevicesStatus(`dev${logicalAddress}`);
 						}
 					}
+					else if(line.includes('f:82:'))
+					{
+						var addArr = line.substring(line.indexOf('f:82:') + 5).split(':');
+						if(addArr.length === 2)
+						{
+							var detAddr = addArr[0].charAt(0) + '.' + addArr[0].charAt(1) +
+								'.' + addArr[1].charAt(0) + '.' + addArr[1].charAt(1);
+
+							for(var key in this.devices)
+							{
+								if(
+									typeof this.devices[key] === 'object'
+									&& this.devices[key].hasOwnProperty('activeSource')
+									&& this.devices[key].hasOwnProperty('address')
+								) {
+									if(
+										this.devices[key].address !== detAddr
+										&& this.devices[key].activeSource === 'yes'
+									) {
+										this.devices[key].activeSource = 'no';
+										ctl_debug(`Changed ${key} activeSource to: no`);
+									}
+									else if(
+										this.devices[key].address === detAddr
+										&& this.devices[key].activeSource === 'no'
+									) {
+										this.devices[key].activeSource = 'yes';
+										ctl_debug(`Changed ${key} activeSource to: yes`);
+									}
+								}
+							}
+						}
+					}
 				}
 				else if(line.includes('<<') && !this.togglingPower)
 				{
@@ -289,11 +322,23 @@ module.exports = class Client
 
 					if(line.includes(`<< ${srcAddress}0:04`))
 					{
+						for(var key in this.devices)
+						{
+							if(
+								typeof this.devices[key] === 'object'
+								&& this.devices[key].hasOwnProperty('activeSource')
+								&& this.devices[key].activeSource === 'yes'
+							) {
+								this.devices[key].activeSource = 'no';
+								ctl_debug(`Changed ${key} activeSource to: no`);
+								break;
+							}
+						}
+
 						if(this.devices[this.myDevice].activeSource !== 'yes')
 							ctl_debug(`Updated dev${srcAddress} activeSource using stdout to: yes`);
 
 						this.devices[this.myDevice].activeSource = 'yes';
-
 						this.cec.emit(`${srcAddress}:activeSource`, 'yes');
 					}
 					else if(line.includes(`<< ${srcAddress}0:9d`))
