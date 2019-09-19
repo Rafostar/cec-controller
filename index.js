@@ -256,6 +256,26 @@ module.exports = class Client
 						if(logicalAddress && logicalAddress.length === 1)
 						{
 							ctl_debug('Received report address request on broadcast');
+							var lineCmd = line.split('>> ')[1];
+
+							if(
+								this.devices.hasOwnProperty('dev' + logicalAddress)
+								&& this.devices['dev' + logicalAddress].address === 'f.f.f.f'
+								&& lineCmd.endsWith(`:0${logicalAddress}`)
+							) {
+								var addArr = lineCmd.substring(
+									lineCmd.indexOf('f:84:') + 5, lineCmd.indexOf(`:0${logicalAddress}`)
+								).split(':');
+
+								if(addArr.length === 2)
+								{
+									var newAddr = addArr[0].charAt(0) + '.' + addArr[0].charAt(1) +
+										'.' + addArr[1].charAt(0) + '.' + addArr[1].charAt(1);
+
+									this.devices['dev' + logicalAddress].address = newAddr;
+									ctl_debug(`Updated dev${logicalAddress} address to: ${newAddr}`);
+								}
+							}
 
 							if(line.includes(`>> ${logicalAddress}f:84:`))
 								this._checkDevicesStatus(`dev${logicalAddress}`);
