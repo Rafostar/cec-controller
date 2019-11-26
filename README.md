@@ -8,7 +8,7 @@
 Requires CEC capable device (e.g. Raspberry Pi or USB-CEC adapter).<br>
 Additionally `cec-client` must be installed. On Raspbian it is included in cec-utils package.
 
-Controller scans devices on startup. It takes a while (scan is done async and result is returned in "ready" event).
+Controller scans devices on startup (when creating new controller object). It takes a while (scan is done async and result is returned in "ready" event). Therefore it is recommended to initialise the controller only once and use the obtained object throughout the code.
 
 ### Usage Examples
 ```javascript
