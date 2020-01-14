@@ -314,6 +314,39 @@ module.exports = class Client
 							}
 						}
 					}
+                    else if(line.includes(`${destAddress}:90:`))
+                    {
+						var logicalAddress = line.substring(line.indexOf('>> ') + 3, line.indexOf(`${destAddress}:90:`));
+						if(logicalAddress && logicalAddress.length === 1)
+						{
+							ctl_debug('Received report current power status request');
+							var lineCmd = line.split('>> ')[1];
+
+							if(this.devices.hasOwnProperty('dev' + logicalAddress))
+							{
+								var pwrSta = lineCmd.substring(lineCmd.indexOf(`${destAddress}:90:`) + 5, lineCmd.length);
+
+								if(pwrSta.length === 2)
+								{
+									var newPwrSta = '';
+
+									switch (pwrSta)
+									{
+										case '00': newPwrSta = 'on'
+										case '01': newPwrSta = 'standby'
+										case '02': newPwrSta = 'in transition from standby to on'
+										case '03': newPwrSta = 'in transition from on to standby'
+									}
+
+									if(newPwrSta!='')
+									{
+										this.devices['dev' + logicalAddress].powerStatus = newPwrSta;
+										ctl_debug(`Updated dev${logicalAddress} powerStatus to: ${newPwrSta}`);
+									}
+								}
+							}
+						}
+                    }
 				}
 				else if(line.includes('<<') && !this.togglingPower)
 				{
