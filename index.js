@@ -229,6 +229,7 @@ module.exports = class Client
 			if(line.includes('>>'))
 			{
 				var destAddress = this.devices[this.myDevice].logicalAddress;
+				ctl_debug('destAddress' + destAddress);
 				var value = this._getLineValue(line).toUpperCase();
 
 				if(line.includes(`>> 0${destAddress}:44:`))
@@ -288,8 +289,8 @@ module.exports = class Client
 						if(line.includes(`>> ${logicalAddress}f:84:`))
 							this._checkDevicesStatus(`dev${logicalAddress}`);
 					}
-                    else if(line.includes(`${destAddress}:90:`))
-                    {
+					else if(line.includes(`${destAddress}:90:`))
+					{
 						var logicalAddress = line.substring(line.indexOf('>> ') + 3, line.indexOf(`${destAddress}:90:`));
 						if(logicalAddress && logicalAddress.length === 1)
 						{
@@ -306,10 +307,10 @@ module.exports = class Client
 
 									switch (pwrSta)
 									{
-										case '00': newPwrSta = 'on'
-										case '01': newPwrSta = 'standby'
-										case '02': newPwrSta = 'in transition from standby to on'
-										case '03': newPwrSta = 'in transition from on to standby'
+										case '00': newPwrSta = 'on'; break;
+										case '01': newPwrSta = 'standby'; break;
+										case '02': newPwrSta = 'in transition from standby to on'; break;
+										case '03': newPwrSta = 'in transition from on to standby'; break;
 									}
 
 									if(newPwrSta!='')
@@ -320,7 +321,7 @@ module.exports = class Client
 								}
 							}
 						}
-                    }
+					}
 				}
 				else if(line.includes('f:82:'))
 				{
